@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,12 +10,19 @@ namespace ThreadPrototype.Components
 {
     public class WarehousePort
     {
-        private HttpClient client;
         private string _url;
+        private ProcessStartInfo processStartInfo;
         public WarehousePort(string url) 
         {
             _url = url;
-            client = new HttpClient();          
+
+            processStartInfo = new ProcessStartInfo();
+            processStartInfo.UseShellExecute = false;
+            processStartInfo.RedirectStandardOutput = true;
+            processStartInfo.RedirectStandardError = true;
+            processStartInfo.RedirectStandardInput = true;
+            processStartInfo.FileName = "cmd";
+            processStartInfo.CreateNoWindow = true;
         }
 
         /// <summary>
@@ -21,26 +30,21 @@ namespace ThreadPrototype.Components
         /// </summary>
         /// <param name="requestMessage"></param>
         /// <returns>returns response</returns>
-        public async void SendRequest(string requestMessage)
+        public string SendRequest(string requestMessage)
         {
-            if(client == null)
+            string output = string.Empty;
+            using(Process process = new Process())
             {
-                client = new HttpClient();
+                process.StartInfo = processStartInfo;
+                process.StartInfo.Arguments = $"/C curl -k --data \"command={requestMessage}\" \"https://192.168.1.1/cgi-bin/warehouse_api\"";
+                process.Start();
+
+                output = process.StandardOutput.ReadToEnd();
+                Console.WriteLine(output);
+                process.WaitForExit();
             }
 
-            var content = new StringContent(requestMessage, Encoding.UTF8, "application/x-www-form-urlencoded");
-
-            HttpResponseMessage response = await client.PostAsync(_url, content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                string responseBody = await response.Content.ReadAsStringAsync();
-                Console.WriteLine(responseBody);
-            }
-            else
-            {
-                Console.WriteLine($"Error: {response.StatusCode}");
-            }
+            return output;
 
         }
     }
