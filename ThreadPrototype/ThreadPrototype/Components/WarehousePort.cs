@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 
 namespace ThreadPrototype.Components
 {
+    /// <summary>
+    /// Contains the testing parameters and function used to performed the tests done when unit is in warehouse mode
+    /// </summary>
     public class WarehousePort
     {
         private string _url;
@@ -29,14 +32,15 @@ namespace ThreadPrototype.Components
         /// Sends cUrl request and returns the response
         /// </summary>
         /// <param name="requestMessage"></param>
-        /// <returns>returns response</returns>
+        /// <returns>returns output</returns>
         public string SendRequest(string requestMessage)
         {
             string output = string.Empty;
-            using(Process process = new Process())
+
+            using (Process process = new Process())
             {
                 process.StartInfo = processStartInfo;
-                process.StartInfo.Arguments = $"/C curl -k --data \"command={requestMessage}\" \"https://192.168.1.1/cgi-bin/warehouse_api\"";
+                process.StartInfo.Arguments = $"/C curl -k --data \"command={requestMessage}\" \"{_url}\"\r\n";
                 process.Start();
 
                 output = process.StandardOutput.ReadToEnd();
