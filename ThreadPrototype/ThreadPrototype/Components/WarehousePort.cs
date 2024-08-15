@@ -42,7 +42,7 @@ namespace ThreadPrototype.Components
                 process.StartInfo = processStartInfo;
                 process.StartInfo.Arguments = $"/C curl -k --data \"command={requestMessage}\" \"{_url}\"\r\n";
                 process.Start();
-
+                //Timeout?
                 output = process.StandardOutput.ReadToEnd();
                 Console.WriteLine(output);
                 process.WaitForExit();

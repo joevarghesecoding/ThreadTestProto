@@ -20,7 +20,7 @@ namespace ThreadPrototype.Components
         {
             _serialPort = new SerialPort(com);
             _serialPort.BaudRate = _baudrate;
-            _serialPort.ReadTimeout = 1000000;
+            _serialPort.ReadTimeout = 20000;
             _serialPort.WriteTimeout = 5000;
         }
         /// <summary>
@@ -28,36 +28,52 @@ namespace ThreadPrototype.Components
         /// </summary>
         /// <param name="message"> The command written to serial</param>
         /// <returns></returns>
-        public void WriteLine(string message)
+        public void Write(string message)
         {
-            if(!_serialPort.IsOpen)
+            if (!_serialPort.IsOpen)
                 _serialPort.Open();
             _serialPort.WriteLine(message);
-
         }
+
         /// <summary>
         /// Gets the feedback from serial port from the write
         /// </summary>
         /// <returns> return response </returns>
         public string Read()
         {
-            if(_serialPort.IsOpen)
+            if (_serialPort.IsOpen)
             {
-                byte[] buffer = new byte[4092];
+                List<byte> data = new List<byte>();
+                byte[] buffer = new byte[512];
+                int bytesRead = 0;
+                // Read the first chunk of data
+                try
+                {
+                    bytesRead = _serialPort.Read(buffer, 0, buffer.Length);
+                    data.AddRange(buffer.Take(bytesRead));
+                    Thread.Sleep(5);//intention to stifle line breaking of read message to reduce test repetition
+                    while (_serialPort.BytesToRead > 0)
+                    {
 
-                _serialPort.Read(buffer, 0, buffer.Length);
-                string response = Encoding.UTF8.GetString(buffer);
-
-                return response;
+                        bytesRead = _serialPort.Read(buffer, 0, buffer.Length);
+                        data.AddRange(buffer.Take(bytesRead));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                    return Encoding.UTF8.GetString(data.ToArray());
+                }
+                return Encoding.UTF8.GetString(data.ToArray());
             }
-
-            return string.Empty;
+            return null;
         }
+
         /// <summary>
         /// Reads the output until a string is found, or enough time has elapsed 
         /// </summary>
         /// <param name="message"> The string being searched</param>
-        /// /// <param name="timeout"> The enough time in milliseconds</param>
+        /// <param name="timeout"> The enough time in milliseconds</param>
         /// <returns> res and result </returns>
         public async Task<string> Expect(string message, int timeout)
         {
@@ -67,7 +83,6 @@ namespace ThreadPrototype.Components
                 string res = "";
                 while (!String.IsNullOrEmpty(res = Read()))
                 {
-                    //string res = Read();
                     if (res.Contains(message))
                     {
                         return res;
@@ -90,6 +105,5 @@ namespace ThreadPrototype.Components
             return result;
 
         }
-          
     }
 }
